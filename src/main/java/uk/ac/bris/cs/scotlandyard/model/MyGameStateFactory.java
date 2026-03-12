@@ -1,5 +1,5 @@
 package uk.ac.bris.cs.scotlandyard.model;
-// hello hello
+
 import com.google.common.collect.ImmutableList;
 
 import com.google.common.collect.ImmutableSet;
@@ -67,6 +67,7 @@ public final class MyGameStateFactory implements Factory<GameState> {
 			if(mrX == null) throw new NullPointerException("mrX is empty!");
 			if (!mrX.isMrX()) throw new IllegalArgumentException("Mr X piece is invalid!");
 			if(detectives.isEmpty()) throw new IllegalArgumentException("Detectives is empty!");
+			if(setup.graph.edges().isEmpty() || setup.graph.nodes().isEmpty()) throw new IllegalArgumentException("Graph is empty!");
 			for (Player i : detectives) {
 				if (i.has(ScotlandYard.Ticket.SECRET) || i.has(ScotlandYard.Ticket.DOUBLE)) {
 					throw new IllegalArgumentException("Detective cannot have secret or double ticket types!");
@@ -94,6 +95,7 @@ public final class MyGameStateFactory implements Factory<GameState> {
 			for (Player j : detectives) {
 				if (j.equals(detective)) return Optional.of(j.location());
 			}
+
 			return Optional.empty();
 		}
 
@@ -109,6 +111,7 @@ public final class MyGameStateFactory implements Factory<GameState> {
 
 		@Override
 		public ImmutableSet<Piece> getWinner() {
+			// testWinningPlayersIsEmptyInitially
 			return null;
 		}
 
