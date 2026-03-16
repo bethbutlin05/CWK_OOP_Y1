@@ -15,7 +15,7 @@ import java.util.Optional;
  * cw-model
  * Stage 1: Complete this class
  */
-// hello
+// hello hello hello
 public final class MyGameStateFactory implements Factory<GameState> {
 
 	//create initial state, validate input, set variables
