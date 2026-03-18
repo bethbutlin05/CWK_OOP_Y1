@@ -98,9 +98,10 @@ public final class MyGameStateFactory implements Factory<GameState> {
 
 		@Override
 		public Optional<Integer> getDetectiveLocation(Piece.Detective detective) {
-			for (Player j : detectives) {
-				if (j.equals(detective)) return Optional.of(j.location());
-			}
+			Optional<Integer> i = Optional.empty();
+				for (Player j : detectives) {
+					if (detective.isDetective() && (j.piece().equals(detective))) return Optional.of(j.location());
+				}
 			return Optional.empty();
 		}
 
