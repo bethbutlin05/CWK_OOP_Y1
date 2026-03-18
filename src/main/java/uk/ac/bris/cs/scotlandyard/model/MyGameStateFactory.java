@@ -79,6 +79,8 @@ public final class MyGameStateFactory implements Factory<GameState> {
 					}
 				}
 			}
+
+			moves = getAvailableMoves();
 		}
 
 		@Override
@@ -96,7 +98,6 @@ public final class MyGameStateFactory implements Factory<GameState> {
 			for (Player j : detectives) {
 				if (j.equals(detective)) return Optional.of(j.location());
 			}
-
 			return Optional.empty();
 		}
 
@@ -118,9 +119,30 @@ public final class MyGameStateFactory implements Factory<GameState> {
 
 		@Override
 		public ImmutableSet<Move> getAvailableMoves() {
+			//makeSingleMoves();
 			return null;
 		}
 
+		private static ImmutableSet<Move.SingleMove> makeSingleMoves(GameSetup setup, List<Player> detectives, Player player, int source){
+
+			// TODO create an empty collection of some sort, say, HashSet, to store all the SingleMove we generate
+
+			for(int destination : setup.graph.adjacentNodes(source)) {
+				// TODO find out if destination is occupied by a detective
+				//  if the location is occupied, don't add to the collection of moves to return
+
+				for (ScotlandYard.Transport t : setup.graph.edgeValueOrDefault(source, destination, ImmutableSet.of()) ) {
+					// TODO find out if the player has the required tickets
+					//  if it does, construct a SingleMove and add it the collection of moves to return
+				}
+
+				// TODO consider the rules of secret moves here
+				//  add moves to the destination via a secret ticket if there are any left with the player
+			}
+
+			// TODO return the collection of moves
+            return null;
+        }
 		@Override
 		public GameState advance(Move move) {
 			if(!moves.contains(move)) throw new IllegalArgumentException("Illegal move: "+move);
