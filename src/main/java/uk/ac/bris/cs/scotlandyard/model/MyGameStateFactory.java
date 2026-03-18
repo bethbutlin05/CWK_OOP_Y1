@@ -8,6 +8,7 @@ import jakarta.annotation.Nonnull;
 import uk.ac.bris.cs.scotlandyard.model.Board.GameState;
 import uk.ac.bris.cs.scotlandyard.model.ScotlandYard.Factory;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 
@@ -79,6 +80,7 @@ public final class MyGameStateFactory implements Factory<GameState> {
 					}
 				}
 			}
+			//if (!getWinner().isEmpty()) {throw new NullPointerException("Get winner set is empty!");};
 
 			moves = getAvailableMoves();
 		}
@@ -126,14 +128,33 @@ public final class MyGameStateFactory implements Factory<GameState> {
 		private static ImmutableSet<Move.SingleMove> makeSingleMoves(GameSetup setup, List<Player> detectives, Player player, int source){
 
 			// TODO create an empty collection of some sort, say, HashSet, to store all the SingleMove we generate
+			HashSet<Move.SingleMove> singleMoveHashSet = new HashSet<>();
 
 			for(int destination : setup.graph.adjacentNodes(source)) {
 				// TODO find out if destination is occupied by a detective
 				//  if the location is occupied, don't add to the collection of moves to return
+				for (Player i : detectives) {
+					if (i.location() == destination) {
+						continue;
+					}
+				}
 
 				for (ScotlandYard.Transport t : setup.graph.edgeValueOrDefault(source, destination, ImmutableSet.of()) ) {
 					// TODO find out if the player has the required tickets
 					//  if it does, construct a SingleMove and add it the collection of moves to return
+
+					if (t.requiredTicket() == ScotlandYard.Ticket.TAXI) {
+						singleMoveHashSet.add(new Move.SingleMove(player.piece(), source, t.requiredTicket(), destination));
+					}
+					if (t.requiredTicket() == ScotlandYard.Ticket.BUS) {
+						singleMoveHashSet.add(new Move.SingleMove(player.piece(), source, t.requiredTicket(), destination));
+					}
+					if (t.requiredTicket() == ScotlandYard.Ticket.UNDERGROUND) {
+						singleMoveHashSet.add(new Move.SingleMove(player.piece(), source, t.requiredTicket(), destination));
+					}
+					if (t.requiredTicket() == ScotlandYard.Ticket.SECRET) {
+						singleMoveHashSet.add(new Move.SingleMove(player.piece(), source, ScotlandYard.Transport.FERRY.requiredTicket(), destination));
+					}
 				}
 
 				// TODO consider the rules of secret moves here
@@ -141,8 +162,9 @@ public final class MyGameStateFactory implements Factory<GameState> {
 			}
 
 			// TODO return the collection of moves
-            return null;
+            return ImmutableSet.copyOf(singleMoveHashSet);
         }
+		//			HashSet<Move.SingleMove> singleMoveHashSet = new HashSet<>(1);
 		@Override
 		public GameState advance(Move move) {
 			if(!moves.contains(move)) throw new IllegalArgumentException("Illegal move: "+move);
