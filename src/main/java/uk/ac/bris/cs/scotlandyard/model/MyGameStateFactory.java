@@ -105,10 +105,10 @@ public final class MyGameStateFactory implements Factory<GameState> {
 
 		@Override
 		public Optional<TicketBoard> getPlayerTickets(Piece piece) {
-			//if (piece.isMrX()) return Optional.of(mrX.tickets());
-			//for (Player i : detectives) {
-			//	if (i.piece() == piece) return Optional.of(detectives);
-			//}
+			if (piece.isMrX()) return Optional.of(requestedTicket -> mrX.tickets().getOrDefault(requestedTicket, 0));
+			for (Player i : detectives) {
+				if (i.piece() == piece) return Optional.of(requestedTicket -> i.tickets().getOrDefault(requestedTicket, 0));
+			}
 			return Optional.empty();
 		}
 
