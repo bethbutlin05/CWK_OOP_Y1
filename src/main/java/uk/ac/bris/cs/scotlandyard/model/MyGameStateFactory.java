@@ -42,6 +42,7 @@ public final class MyGameStateFactory implements Factory<GameState> {
 		private List<Player> detectives;
 		private ImmutableSet<Move> moves;
 		private ImmutableSet<Piece> winner;
+		private ImmutableSet<Piece> allPlayers;
 
 		//constructor
 		private MyGameState(
@@ -82,6 +83,13 @@ public final class MyGameStateFactory implements Factory<GameState> {
 			//winner set is ALWAYS empty, need to change this to only be empty when the game starts.
 			this.winner = ImmutableSet.of();
 			//this.moves = generateMoves(remaining);
+			var builder = ImmutableSet.<Piece>builder();
+			builder.add(mrX.piece());
+			for (Player i : detectives) {
+				builder.add(i.piece());
+			}
+			this.allPlayers = builder.build();
+
 		}
 
 		@Override
@@ -91,7 +99,7 @@ public final class MyGameStateFactory implements Factory<GameState> {
 
 		@Override
 		public ImmutableSet<Piece> getPlayers() {
-			return null;
+			return allPlayers;
 		}
 
 		@Override
@@ -105,6 +113,15 @@ public final class MyGameStateFactory implements Factory<GameState> {
 
 		@Override
 		public Optional<TicketBoard> getPlayerTickets(Piece piece) {
+			//using lambdas!! woop woop. but we need to be able to explain how it works SO
+			//lambdas = shortcuts. If an interface has exactly ONE method, you don't need to write out
+			//a whole new class to implement it, just use arrow notation ->
+			//requestedTicket is the parameter, Java knows it's a ticket because the TicketBoard interface (in board)
+			//says so.
+			// -> can be read as "executes"
+			//mrX.tickets().getOrDefault(requestedTicket, 0) is the logic, it looks in the map
+			//for the requested ticket, finds it, returns it.
+			//if it doesn't find it, return 0 (getOrDefault bit)
 			if (piece.isMrX()) return Optional.of(requestedTicket -> mrX.tickets().getOrDefault(requestedTicket, 0));
 			for (Player i : detectives) {
 				if (i.piece() == piece) return Optional.of(requestedTicket -> i.tickets().getOrDefault(requestedTicket, 0));
