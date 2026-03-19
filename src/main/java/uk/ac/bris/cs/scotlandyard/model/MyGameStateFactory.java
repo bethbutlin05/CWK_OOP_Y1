@@ -8,11 +8,7 @@ import jakarta.annotation.Nonnull;
 import uk.ac.bris.cs.scotlandyard.model.Board.GameState;
 import uk.ac.bris.cs.scotlandyard.model.ScotlandYard.Factory;
 
-import javax.annotation.concurrent.Immutable;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 
 /**
  * cw-model
@@ -66,6 +62,7 @@ public final class MyGameStateFactory implements Factory<GameState> {
 			this.log = log;
 			this.mrX = mrX;
 			this.detectives = detectives;
+
 			if(setup.moves.isEmpty()) throw new IllegalArgumentException("Moves is empty!");
 			if(remaining.isEmpty()) throw new IllegalArgumentException("Remaining pieces set is empty!");
 			if(mrX == null) throw new NullPointerException("mrX is empty!");
@@ -82,7 +79,8 @@ public final class MyGameStateFactory implements Factory<GameState> {
 					}
 				}
 			}
-			//if (!getWinner().isEmpty()) {throw new NullPointerException("Get winner set is empty!");};
+			//winner set is ALWAYS empty, need to change this to only be empty when the game starts.
+			this.winner = ImmutableSet.of();
 			//this.moves = generateMoves(remaining);
 		}
 
@@ -107,6 +105,10 @@ public final class MyGameStateFactory implements Factory<GameState> {
 
 		@Override
 		public Optional<TicketBoard> getPlayerTickets(Piece piece) {
+			//if (piece.isMrX()) return Optional.of(mrX.tickets());
+			//for (Player i : detectives) {
+			//	if (i.piece() == piece) return Optional.of(detectives);
+			//}
 			return Optional.empty();
 		}
 
@@ -118,6 +120,13 @@ public final class MyGameStateFactory implements Factory<GameState> {
 		@Override
 		public ImmutableSet<Piece> getWinner() {
 			// testWinningPlayersIsEmptyInitially
+			//ImmutableSet<Piece> winnerSet = new ImmutableSet<Piece>();
+			//for (Player i : detectives) {
+			//	if (i.location() == mrX.location()) {
+
+			//	}
+			//}
+			//return ImmutableSet.of();
 			return winner;
 		}
 
@@ -171,6 +180,13 @@ public final class MyGameStateFactory implements Factory<GameState> {
 			// TODO return the collection of moves
             return ImmutableSet.copyOf(singleMoveHashSet);
         }
+
+		private static ImmutableSet<Move.SingleMove> makeDoubleMoves(GameSetup setup, List<Player> detectives, Player player, int source){
+			HashSet<Move.SingleMove> doubleMoveHashSet = new HashSet<>();
+			doubleMoveHashSet.addAll(makeSingleMoves(setup, detectives, player, source));
+			doubleMoveHashSet.addAll(makeSingleMoves(setup, detectives, player, source));
+			return ImmutableSet.copyOf(doubleMoveHashSet);
+		}
 /*
 		//private ImmutableSet<Move> generateMoves(ImmutableSet<Piece> remaining) {
 		//	Set<Move> moves = new HashSet<>();
