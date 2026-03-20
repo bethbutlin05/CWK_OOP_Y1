@@ -33,16 +33,16 @@ public final class MyGameStateFactory implements Factory<GameState> {
 		);
 
 	}
-	private final class MyGameState implements GameState {
+	private final static class MyGameState implements GameState {
 		//attributes
-		private GameSetup setup;
-		private ImmutableSet<Piece> remaining;
-		private ImmutableList<LogEntry> log;
-		private Player mrX;
-		private List<Player> detectives;
+		private final GameSetup setup;
+		private final ImmutableSet<Piece> remaining;
+		private final ImmutableList<LogEntry> log;
+		private final Player mrX;
+		private final List<Player> detectives;
 		private ImmutableSet<Move> moves;
-		private ImmutableSet<Piece> winner;
-		private ImmutableSet<Piece> allPlayers;
+		private final ImmutableSet<Piece> winner;
+		private final ImmutableSet<Piece> allPlayers;
 
 		//constructor
 		private MyGameState(
@@ -84,13 +84,35 @@ public final class MyGameStateFactory implements Factory<GameState> {
 			}
 			//winner set is ALWAYS empty, need to change this to only be empty when the game starts.
 			this.winner = ImmutableSet.of();
-			//this.moves = generateMoves(remaining);
+
 			var builder = ImmutableSet.<Piece>builder();
 			builder.add(mrX.piece());
 			for (Player i : detectives) {
 				builder.add(i.piece());
 			}
 			this.allPlayers = builder.build();
+
+			HashSet<Move> moves = new HashSet<>();
+
+			for (Piece i : remaining) {
+				Player player = null;
+				if (i.isMrX()) player = mrX;
+				else {
+					for (Player j : detectives){
+						if (j.piece() == i) {
+							player = j;
+							break;
+						}
+					}
+				}
+				if (player == null) throw new IllegalArgumentException("Piece not found!");
+				int location = player.location();
+				moves.addAll(makeSingleMoves(setup, detectives, player, location));
+				if (i.isMrX()) {
+					moves.addAll(makeDoubleMoves(setup, detectives, player, location));
+				}
+			}
+			this.moves = ImmutableSet.copyOf(moves);
 
 		}
 
@@ -106,7 +128,6 @@ public final class MyGameStateFactory implements Factory<GameState> {
 
 		@Override
 		public Optional<Integer> getDetectiveLocation(Piece.Detective detective) {
-			Optional<Integer> i = Optional.empty();
 				for (Player j : detectives) {
 					if (detective.isDetective() && (j.piece().equals(detective))) return Optional.of(j.location());
 				}
@@ -267,7 +288,7 @@ public final class MyGameStateFactory implements Factory<GameState> {
 					//find out if it is a reveal round or not
 					if (move.commencedBy().isMrX()) {
 
-					};
+					}
 					//if you loop through (setup.moves == true) it is a reveal round
 					//loop through the log immutable list for this
 
