@@ -92,27 +92,7 @@ public final class MyGameStateFactory implements Factory<GameState> {
 			}
 			this.allPlayers = builder.build();
 
-			HashSet<Move> moves = new HashSet<>();
-
-			for (Piece i : remaining) {
-				Player player = null;
-				if (i.isMrX()) player = mrX;
-				else {
-					for (Player j : detectives){
-						if (j.piece() == i) {
-							player = j;
-							break;
-						}
-					}
-				}
-				if (player == null) throw new IllegalArgumentException("Piece not found!");
-				int location = player.location();
-				moves.addAll(makeSingleMoves(setup, detectives, player, location));
-				if (i.isMrX()) {
-					moves.addAll(makeDoubleMoves(setup, detectives, player, location));
-				}
-			}
-			this.moves = ImmutableSet.copyOf(moves);
+			this.moves = getAvailableMoves();
 
 		}
 
@@ -174,8 +154,26 @@ public final class MyGameStateFactory implements Factory<GameState> {
 
 		@Override
 		public ImmutableSet<Move> getAvailableMoves() {
-			//makeSingleMoves();
-			return moves;
+			HashSet<Move> moves = new HashSet<>();
+			for (Piece i : remaining) {
+				Player player = null;
+				if (i.isMrX()) player = mrX;
+				else {
+					for (Player j : detectives){
+						if (j.piece() == i) {
+							player = j;
+							break;
+						}
+					}
+				}
+				if (player == null) throw new IllegalArgumentException("Piece not found!");
+				int location = player.location();
+				moves.addAll(makeSingleMoves(setup, detectives, player, location));
+				if (i.isMrX()) {
+					moves.addAll(makeDoubleMoves(setup, detectives, player, location));
+				}
+			}
+			return ImmutableSet.copyOf(moves);
 		}
 
 		private static ImmutableSet<Move.SingleMove> makeSingleMoves(GameSetup setup, List<Player> detectives, Player player, int source){
