@@ -51,6 +51,7 @@ public final class MyGameStateFactory implements Factory<GameState> {
 				final ImmutableList<LogEntry> log,
 				final Player mrX,
 				final List<Player> detectives) {
+
 			//constructor builds immutable game snapshot (computes moves and winner)
 			//generate initial moves
 			//moves = getAvailableMoves();
@@ -58,6 +59,7 @@ public final class MyGameStateFactory implements Factory<GameState> {
 			//if (moves.isEmpty() && remaining.contains(mrX)) {
 			//	winner.equals(detectives);
 			//} else {winner.equals(null);};
+
 			this.setup = setup;
 			this.remaining = remaining;
 			this.log = log;
@@ -113,6 +115,7 @@ public final class MyGameStateFactory implements Factory<GameState> {
 
 		@Override
 		public Optional<TicketBoard> getPlayerTickets(Piece piece) {
+
 			//using lambdas!! woop woop. but we need to be able to explain how it works SO
 			//lambdas = shortcuts. If an interface has exactly ONE method, you don't need to write out
 			//a whole new class to implement it, just use arrow notation ->
@@ -122,6 +125,7 @@ public final class MyGameStateFactory implements Factory<GameState> {
 			//mrX.tickets().getOrDefault(requestedTicket, 0) is the logic, it looks in the map
 			//for the requested ticket, finds it, returns it.
 			//if it doesn't find it, return 0 (getOrDefault bit)
+
 			if (piece.isMrX()) return Optional.of(requestedTicket -> mrX.tickets().getOrDefault(requestedTicket, 0));
 			for (Player i : detectives) {
 				if (i.piece() == piece) return Optional.of(requestedTicket -> i.tickets().getOrDefault(requestedTicket, 0));
@@ -198,11 +202,35 @@ public final class MyGameStateFactory implements Factory<GameState> {
             return ImmutableSet.copyOf(singleMoveHashSet);
         }
 
-		private static ImmutableSet<Move.SingleMove> makeDoubleMoves(GameSetup setup, List<Player> detectives, Player player, int source){
-			HashSet<Move.SingleMove> doubleMoveHashSet = new HashSet<>();
-			doubleMoveHashSet.addAll(makeSingleMoves(setup, detectives, player, source));
-			doubleMoveHashSet.addAll(makeSingleMoves(setup, detectives, player, source));
-			return ImmutableSet.copyOf(doubleMoveHashSet);
+		private static ImmutableSet<Move.DoubleMove> makeDoubleMoves(GameSetup setup, List<Player> detectives, Player player, int source){
+			//check that player actually has a double ticket
+			if (!player.has(ScotlandYard.Ticket.DOUBLE)) return ImmutableSet.of();
+
+			Set<Move.SingleMove> firstMoves = makeSingleMoves(setup, detectives, player, source);
+
+			HashSet<Move.DoubleMove> secondMoveHashSet = new HashSet<>();
+
+			for (Move.SingleMove i : firstMoves){
+
+				//get the destination and ticket of each first move, then use the destination as the 'starting point' for the next move.
+				int dest1 = i.destination;
+				ScotlandYard.Ticket ticket1 = i.ticket;
+
+				Set<Move.SingleMove> secondMoves = makeSingleMoves(setup, detectives, player, dest1);
+
+				for (Move.SingleMove j : secondMoves) {
+					int dest2 = j.destination;
+					ScotlandYard.Ticket ticket2 = j.ticket;
+					// if ticket1 == ticket2 it means mrX is trying to use for example 2 Taxi tickets in a row.
+					// must now make sure that the player has 2 or more of that specific ticket
+					if (ticket1 == ticket2){
+						if (!player.hasAtLeast(ticket1, 2)) continue;
+					}
+					Move.DoubleMove doubleMove = new Move.DoubleMove(player.piece(), source, ticket1, dest1, ticket2, dest2);
+					secondMoveHashSet.add(doubleMove);
+				}
+			}
+			return ImmutableSet.copyOf(secondMoveHashSet);
 		}
 /*
 		//private ImmutableSet<Move> generateMoves(ImmutableSet<Piece> remaining) {
