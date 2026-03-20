@@ -167,9 +167,12 @@ public final class MyGameStateFactory implements Factory<GameState> {
 					}
 				}
 				if (player == null) throw new IllegalArgumentException("Piece not found!");
+
 				int location = player.location();
+
 				moves.addAll(makeSingleMoves(setup, detectives, player, location));
-				if (i.isMrX()) {
+				//check that there are enough move available to make a double move by substracting the remaining moves from the total number of moves allowed.
+				if (i.isMrX() && (setup.moves.size() - log.size() >= 2)) {
 					moves.addAll(makeDoubleMoves(setup, detectives, player, location));
 				}
 			}
@@ -184,39 +187,29 @@ public final class MyGameStateFactory implements Factory<GameState> {
 			for(int destination : setup.graph.adjacentNodes(source)) {
 				// TODO find out if destination is occupied by a detective
 				//  if the location is occupied, don't add to the collection of moves to return
+				boolean isLocationOccupied = false;
 				for (Player i : detectives) {
 					if (i.location() == destination) {
-						continue;
+						isLocationOccupied = true;
+						break;
 					}
 				}
+
+				if (isLocationOccupied) continue;
 
 				for (ScotlandYard.Transport t : setup.graph.edgeValueOrDefault(source, destination, ImmutableSet.of()) ) {
 					// TODO find out if the player has the required tickets
 					//  if it does, construct a SingleMove and add it the collection of moves to return
-					if (t == ScotlandYard.Transport.TAXI) {
-						if (player.has(t.requiredTicket())){
-						singleMoveHashSet.add(new Move.SingleMove(player.piece(), source, t.requiredTicket(), destination));}
-					}
-					if (t == ScotlandYard.Transport.BUS) {
-						if (player.has(t.requiredTicket())){
-							singleMoveHashSet.add(new Move.SingleMove(player.piece(), source, t.requiredTicket(), destination));}
-					}
-					if (t == ScotlandYard.Transport.UNDERGROUND) {
-						if (player.has(t.requiredTicket())){
-							singleMoveHashSet.add(new Move.SingleMove(player.piece(), source, t.requiredTicket(), destination));}
-					}
-					if (t == ScotlandYard.Transport.FERRY) {
-						if (player.has(t.requiredTicket())){
-							singleMoveHashSet.add(new Move.SingleMove(player.piece(), source, t.requiredTicket(), destination));}
+					if (player.has(t.requiredTicket())){
+						singleMoveHashSet.add(new Move.SingleMove(player.piece(), source, t.requiredTicket(), destination));
 					}
 				}
-
 				// TODO consider the rules of secret moves here
 				//  add moves to the destination via a secret ticket if there are any left with the player
 				if (player.has(ScotlandYard.Ticket.SECRET)) {
-					singleMoveHashSet.add(new Move.SingleMove(player.piece(), source, ScotlandYard.Ticket.SECRET, destination));}
+					singleMoveHashSet.add(new Move.SingleMove(player.piece(), source, ScotlandYard.Ticket.SECRET, destination));
+				}
 			}
-
 			// TODO return the collection of moves
             return ImmutableSet.copyOf(singleMoveHashSet);
         }
@@ -251,23 +244,7 @@ public final class MyGameStateFactory implements Factory<GameState> {
 			}
 			return ImmutableSet.copyOf(secondMoveHashSet);
 		}
-/*
-		//private ImmutableSet<Move> generateMoves(ImmutableSet<Piece> remaining) {
-		//	Set<Move> moves = new HashSet<>();
-		//	for (Piece i : remaining) {
-		//		if (i.isDetective()){
-		//
- 		//		}
-		//	}
-		//	if (remaining.contains(mrX)){
-		//		//single and double moves
-		//	}
-		//	else if (remaining.contains(detectives)){
-		//		//just single moves
-		//		moves.addAll(makeSingleMoves(setup, detectives, ));
-		//	}
-		//}
-*/
+
 		@Override
 		public GameState advance(Move move) {
 			if(!moves.contains(move)) throw new IllegalArgumentException("Illegal move: "+move);
