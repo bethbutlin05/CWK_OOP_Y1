@@ -200,7 +200,7 @@ public final class MyGameStateFactory implements Factory<GameState> {
 				for (ScotlandYard.Transport t : setup.graph.edgeValueOrDefault(source, destination, ImmutableSet.of()) ) {
 					// TODO find out if the player has the required tickets
 					//  if it does, construct a SingleMove and add it the collection of moves to return
-					if (player.has(t.requiredTicket())){
+					if (player.has(t.requiredTicket())) {
 						singleMoveHashSet.add(new Move.SingleMove(player.piece(), source, t.requiredTicket(), destination));
 					}
 				}
@@ -261,11 +261,17 @@ public final class MyGameStateFactory implements Factory<GameState> {
 					//logic to deal with two cases of single move (mrx or detectives).
 					//you can find out if mrx or detectives as there is stuff in the move. e.g. move.commencedBy().isMr()
 					//find out if it is a reveal round or not
-					if (move.commencedBy().isMrX()) {
-
-					}
 					//if you loop through (setup.moves == true) it is a reveal round
 					//loop through the log immutable list for this
+					if (move.commencedBy().isMrX()) {
+						//in the setup attribute, if
+						if (setup.moves.get(log.size()) == true){
+							LogEntry.reveal(move.ticket, move.destination);
+						} else LogEntry.hidden(move.ticket);
+					}
+					else if (move.commencedBy().isDetective()) {
+
+					}
 
 					//for detectives: use the immutable pieces set remaining.
 					//when detectives makes a moves, don't put in new set of remaining. look at what tucket was used and give to mr x
