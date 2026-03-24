@@ -265,7 +265,9 @@ public final class MyGameStateFactory implements Factory<GameState> {
 				@Override
 				public GameState visit(Move.SingleMove move) {
 					List<LogEntry> newLog = new ArrayList<>(log);
+					Player newMrX = null;
 					ArrayList<Player> newDetectives = new ArrayList<>(detectives);
+					HashSet<Piece> remainingSet = new HashSet<>(remaining);
 					//singlemove uses dynamic dispatch and visitor pattern NEED TO KNOW THIS WELL
 					//logic to deal with two cases of single move (mrx or detectives).
 					//you can find out if mrx or detectives as there is stuff in the move. e.g. move.commencedBy().isMr()
@@ -288,29 +290,38 @@ public final class MyGameStateFactory implements Factory<GameState> {
 						//.give(Ticket) returns a new play with that specific ticket added
 						//.at(int location) returns a new player sitting at the new destination
 						//player.use(Ticket).at(location) creates a new version of the player who has one less ticket and is now standing at a new location
-						Player newMrX = mrX.use(move.ticket).at(move.destination);
+						newMrX = mrX.use(move.ticket).at(move.destination);
+						for (Player i : detectives){
+							remainingSet.add(i.piece());
+						}
 					}
 					else if (move.commencedBy().isDetective()) {
 						for (Player i : detectives) {
 							if (i.piece() == move.commencedBy()){
 								Player newDetective = i.use(move.ticket).at(move.destination);
-								//give mrX the exact ticket the detective just spent, his location statys the same
-								Player newMrx = mrX.give(move.ticket);
+								//give mrX the exact ticket the detective just spent, his location stays the same
+								newMrX = mrX.give(move.ticket);
 								newDetectives.add(newDetective);
 							}
 							newDetectives.add(i);
+							remainingSet.add(i.piece());
+						}
+						remainingSet.remove(move.commencedBy());
+						if (remainingSet.isEmpty()) {
+							remainingSet.clear();
+							remainingSet.add(mrX.piece());
 						}
 					}
 					//for detectives: use the immutable pieces set remaining.
 					//when detectives makes a move, don't put in new set of remaining. look at what tucket was used and give to mr x
 					//if it's a double move, it will be mr x
-					return new MyGameState(setup, remaining, ImmutableList.copyOf(newLog), mrX, ImmutableList.copyOf(newDetectives));
+					return new MyGameState(setup, ImmutableSet.copyOf(remainingSet), ImmutableList.copyOf(newLog), newMrX, ImmutableList.copyOf(newDetectives));
 				}
 
 				@Override
 				public GameState visit(Move.DoubleMove move) {
 					List<LogEntry> newLog = new ArrayList<>(log);
-
+					HashSet<Piece> remainingSet = new HashSet<>(remaining);
 					//check whether move 1 is a reveal round or not
 					if (setup.moves.get(log.size()) == true){
 						newLog.add(LogEntry.reveal(move.ticket1, move.destination1));
@@ -327,7 +338,10 @@ public final class MyGameStateFactory implements Factory<GameState> {
 						newLog.add(LogEntry.hidden(move.ticket2));
 					}
 					Player newMrX = mrX.use(ScotlandYard.Ticket.DOUBLE).use(move.ticket1).use(move.ticket2).at(move.destination2);
-					return new MyGameState(setup, remaining, ImmutableList.copyOf(newLog), mrX, detectives);
+					for (Player i : detectives){
+						remainingSet.add(i.piece());
+					}
+					return new MyGameState(setup, ImmutableSet.copyOf(remainingSet), ImmutableList.copyOf(newLog), newMrX, detectives);
 				}
 			});
             return nextState;
