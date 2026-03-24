@@ -251,6 +251,8 @@ public final class MyGameStateFactory implements Factory<GameState> {
 			//In java, if you have a Move object, the compiler doesn't know whether it is a SingleMove or DoubleMove object
 			//the visitor pattern allows the object to tell you what it is
 			//we pass into move.accept(...) an anonymous inner class that implements the Move.Visitor interface.
+			//the game state tracks whose turn it is using the 'remaining' attribute
+			//advance()'s job if to determine what this set should look like for the next turn
 
 			if(!moves.contains(move)) throw new IllegalArgumentException("Illegal move: "+move);
 			//takes in a move and returns a new game state. a move comes in, giving the new position. need to return new game state
@@ -262,56 +264,70 @@ public final class MyGameStateFactory implements Factory<GameState> {
 			GameState nextState = move.accept(new Move.Visitor<GameState>() {
 				@Override
 				public GameState visit(Move.SingleMove move) {
+					List<LogEntry> newLog = new ArrayList<>(log);
+					ArrayList<Player> newDetectives = new ArrayList<>(detectives);
 					//singlemove uses dynamic dispatch and visitor pattern NEED TO KNOW THIS WELL
 					//logic to deal with two cases of single move (mrx or detectives).
 					//you can find out if mrx or detectives as there is stuff in the move. e.g. move.commencedBy().isMr()
 					//find out if it is a reveal round or not
 					//if you loop through (setup.moves == true) it is a reveal round
 					//loop through the log immutable list for this
+
 					if (move.commencedBy().isMrX()) {
 						//in the setup attribute, if
 						if (setup.moves.get(log.size()) == true){
 							//add the ticket and the destination to the log
-							LogEntry.reveal(move.ticket, move.destination);
+							LogEntry newEntry = LogEntry.reveal(move.ticket, move.destination);
+							newLog.add(newEntry);
 						}
 						else {
 							//add hidden move to the log
-							LogEntry.hidden(move.ticket);
+							newLog.add(LogEntry.hidden(move.ticket));
 						}
 						//.use(Ticket) returns a new player with that specific ticket deducted
 						//.give(Ticket) returns a new play with that specific ticket added
 						//.at(int location) returns a new player sitting at the new destination
 						//player.use(Ticket).at(location) creates a new version of the player who has one less ticket and is now standing at a new location
-						mrX.use(move.ticket).at(move.destination);
+						Player newMrX = mrX.use(move.ticket).at(move.destination);
 					}
 					else if (move.commencedBy().isDetective()) {
 						for (Player i : detectives) {
 							if (i.piece() == move.commencedBy()){
-								i.use(move.ticket).at(move.destination);
+								Player newDetective = i.use(move.ticket).at(move.destination);
 								//give mrX the exact ticket the detective just spent, his location statys the same
-								mrX.give(move.ticket);
+								Player newMrx = mrX.give(move.ticket);
+								newDetectives.add(newDetective);
 							}
+							newDetectives.add(i);
 						}
 					}
 					//for detectives: use the immutable pieces set remaining.
 					//when detectives makes a move, don't put in new set of remaining. look at what tucket was used and give to mr x
 					//if it's a double move, it will be mr x
-					return new MyGameState(setup, remaining, log, mrX, detectives);
+					return new MyGameState(setup, remaining, ImmutableList.copyOf(newLog), mrX, ImmutableList.copyOf(newDetectives));
 				}
 
 				@Override
 				public GameState visit(Move.DoubleMove move) {
+					List<LogEntry> newLog = new ArrayList<>(log);
+
+					//check whether move 1 is a reveal round or not
 					if (setup.moves.get(log.size()) == true){
-						LogEntry.reveal(move.ticket1, move.destination1);
-						LogEntry.hidden(move.ticket2);
+						newLog.add(LogEntry.reveal(move.ticket1, move.destination1));
 					}
 					else {
-						LogEntry.hidden(move.ticket1);
-						LogEntry.hidden(move.ticket2);
+						newLog.add(LogEntry.hidden(move.ticket1));
 					}
-					mrX.use(move.ticket1).at(move.destination1);
-					mrX.use(move.ticket2).at(move.destination2);
-					return new MyGameState(setup, remaining, log, mrX, detectives);
+
+					//check whether move 2 is a reveal round or not
+					if (setup.moves.get(log.size() + 1) == true){
+						newLog.add(LogEntry.reveal(move.ticket2, move.destination2));
+					}
+					else {
+						newLog.add(LogEntry.hidden(move.ticket2));
+					}
+					Player newMrX = mrX.use(ScotlandYard.Ticket.DOUBLE).use(move.ticket1).use(move.ticket2).at(move.destination2);
+					return new MyGameState(setup, remaining, ImmutableList.copyOf(newLog), mrX, detectives);
 				}
 			});
             return nextState;
