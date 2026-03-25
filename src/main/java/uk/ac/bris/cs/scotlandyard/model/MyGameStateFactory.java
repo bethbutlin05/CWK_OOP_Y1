@@ -41,7 +41,7 @@ public final class MyGameStateFactory implements Factory<GameState> {
 		private final Player mrX;
 		private final List<Player> detectives;
 		private ImmutableSet<Move> moves;
-		private final ImmutableSet<Piece> winner;
+		private ImmutableSet<Piece> winner;
 		private final ImmutableSet<Piece> allPlayers;
 
 		//constructor
@@ -82,18 +82,12 @@ public final class MyGameStateFactory implements Factory<GameState> {
 					}
 				}
 			}
-			//winner set is ALWAYS empty, need to change this to only be empty when the game starts.
-			this.winner = ImmutableSet.of();
 
-			var builder = ImmutableSet.<Piece>builder();
-			builder.add(mrX.piece());
-			for (Player i : detectives) {
-				builder.add(i.piece());
-			}
-			this.allPlayers = builder.build();
+			this.allPlayers = calculateAllPlayers();
 
-			this.moves = getAvailableMoves();
+			this.moves = calculateMoves();
 
+			this.winner = calculateWinner();
 		}
 
 		@Override
@@ -141,19 +135,57 @@ public final class MyGameStateFactory implements Factory<GameState> {
 
 		@Override
 		public ImmutableSet<Piece> getWinner() {
-			// testWinningPlayersIsEmptyInitially
-			//ImmutableSet<Piece> winnerSet = new ImmutableSet<Piece>();
-			//for (Player i : detectives) {
-			//	if (i.location() == mrX.location()) {
-
-			//	}
-			//}
-			//return ImmutableSet.of();
-			return winner;
+			return this.winner;
 		}
 
 		@Override
 		public ImmutableSet<Move> getAvailableMoves() {
+			return this.moves;
+		}
+
+		private ImmutableSet<Piece> calculateAllPlayers() {
+			var builder = ImmutableSet.<Piece>builder();
+			builder.add(mrX.piece());
+			for (Player i : detectives) {
+				builder.add(i.piece());
+			}
+			return builder.build();
+		}
+
+		private ImmutableSet<Piece> calculateWinner(){
+			HashSet<Piece> winnerSet = new HashSet<Piece>();
+			boolean mrXWasCaught = false;
+			for (Player i : detectives) {
+				if (i.location() == mrX.location()) {
+					mrXWasCaught = true;
+				}
+			}
+			if (mrXWasCaught){
+				for (Player j : detectives){
+					winnerSet.add(j.piece());
+					break;
+				}
+			}
+			//mrX cant make any moves
+			else if (remaining.contains(mrX.piece()) && this.moves.isEmpty()){
+				for (Player j : detectives){
+					winnerSet.add(j.piece());
+				}
+			}
+			//if mrX's log is equal to the total number of rounds in the game, the log is full
+			//must also check that the remaining set contains mrX. if mrX fills the log on his turn, the detectives still get 1 final round
+			//if the remaining set contains mrX, it means the turn successfully passed back to him after that round, meaning he survived
+			else if (this.log.size() == setup.moves.size() && remaining.contains(mrX.piece())){
+				winnerSet.add(mrX.piece());
+			}
+			//detectives cant make any moves
+			else if (!remaining.contains(mrX.piece()) && this.moves.isEmpty()){
+				winnerSet.add(mrX.piece());
+			}
+            return ImmutableSet.copyOf(winnerSet);
+        }
+
+		private ImmutableSet<Move> calculateMoves() {
 			HashSet<Move> moves = new HashSet<>();
 			for (Piece i : remaining) {
 				Player player = null;
@@ -308,7 +340,6 @@ public final class MyGameStateFactory implements Factory<GameState> {
 						}
 						remainingSet.remove(move.commencedBy());
 						if (remainingSet.isEmpty()) {
-							remainingSet.clear();
 							remainingSet.add(mrX.piece());
 						}
 					}
