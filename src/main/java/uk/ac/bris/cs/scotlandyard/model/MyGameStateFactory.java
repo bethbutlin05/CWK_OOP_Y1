@@ -353,7 +353,7 @@ public final class MyGameStateFactory implements Factory<GameState> {
 								newDetectives.add(newDetective);
 							}
 							newDetectives.add(i);
-							remainingSet.add(i.piece());
+							//remainingSet.add(i.piece());
 						}
 						remainingSet.remove(move.commencedBy());
 						if (remainingSet.isEmpty()) {
@@ -371,6 +371,8 @@ public final class MyGameStateFactory implements Factory<GameState> {
 				public GameState visit(Move.DoubleMove move) {
 					List<LogEntry> newLog = new ArrayList<>(log);
 					HashSet<Piece> remainingSet = new HashSet<>(remaining);
+					remainingSet.clear();
+
 					//check whether move 1 is a reveal round or not
 					if (setup.moves.get(log.size()) == true){
 						newLog.add(LogEntry.reveal(move.ticket1, move.destination1));
