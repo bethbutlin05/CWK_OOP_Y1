@@ -88,6 +88,10 @@ public final class MyGameStateFactory implements Factory<GameState> {
 			this.moves = calculateMoves();
 
 			this.winner = calculateWinner();
+
+			if (!this.winner.isEmpty()) {
+				this.moves = ImmutableSet.of();
+			}
 		}
 
 		@Override
@@ -154,34 +158,46 @@ public final class MyGameStateFactory implements Factory<GameState> {
 
 		private ImmutableSet<Piece> calculateWinner(){
 			HashSet<Piece> winnerSet = new HashSet<Piece>();
+
+			//check whether a detective landed on mrX
 			boolean mrXWasCaught = false;
 			for (Player i : detectives) {
 				if (i.location() == mrX.location()) {
 					mrXWasCaught = true;
-				}
-			}
-			if (mrXWasCaught){
-				for (Player j : detectives){
-					winnerSet.add(j.piece());
 					break;
 				}
 			}
-			//mrX cant make any moves
-			else if (remaining.contains(mrX.piece()) && this.moves.isEmpty()){
+
+			//check whether mrX is trapped
+			boolean mrXIsTrapped = remaining.contains(mrX.piece()) && this.moves.isEmpty();
+
+			//check whether mrX survived till the end (log is full, and it is his turn again)
+			//if mrX's log is equal to the total number of rounds in the game, the log is full
+			//must also check that the remaining set contains mrX. if mrX fills the log on his turn, the detectives still get 1 final round
+			//if the remaining set contains mrX, it means the turn successfully passed back to him after that round, meaning he survived
+			boolean logFull = (this.log.size() == setup.moves.size() && remaining.contains(mrX.piece()));
+
+			//use singleMoves method to ask if the detective are stuck
+			boolean detectivesStuck = true;
+			for (Player i : detectives) {
+				if (!makeSingleMoves(setup, detectives, i, i.location()).isEmpty()) {
+					detectivesStuck = false;
+					break;
+				}
+			}
+
+			//detectives win if they catch him or trap him
+			if (mrXWasCaught || mrXIsTrapped){
 				for (Player j : detectives){
 					winnerSet.add(j.piece());
 				}
 			}
-			//if mrX's log is equal to the total number of rounds in the game, the log is full
-			//must also check that the remaining set contains mrX. if mrX fills the log on his turn, the detectives still get 1 final round
-			//if the remaining set contains mrX, it means the turn successfully passed back to him after that round, meaning he survived
-			else if (this.log.size() == setup.moves.size() && remaining.contains(mrX.piece())){
+
+			//mrX wins if he survives to the end OR detectives are stuck
+			else if (logFull || detectivesStuck){
 				winnerSet.add(mrX.piece());
 			}
-			//detectives cant make any moves
-			else if (!remaining.contains(mrX.piece()) && this.moves.isEmpty()){
-				winnerSet.add(mrX.piece());
-			}
+
             return ImmutableSet.copyOf(winnerSet);
         }
 
@@ -298,7 +314,6 @@ public final class MyGameStateFactory implements Factory<GameState> {
 				public GameState visit(Move.SingleMove move) {
 					List<LogEntry> newLog = new ArrayList<>(log);
 					Player newMrX = null;
-					ArrayList<Player> newDetectives = new ArrayList<>(detectives);
 					HashSet<Piece> remainingSet = new HashSet<>(remaining);
 					//singlemove uses dynamic dispatch and visitor pattern NEED TO KNOW THIS WELL
 					//logic to deal with two cases of single move (mrx or detectives).
@@ -308,6 +323,7 @@ public final class MyGameStateFactory implements Factory<GameState> {
 					//loop through the log immutable list for this
 
 					if (move.commencedBy().isMrX()) {
+						remainingSet.clear();
 						//in the setup attribute, if
 						if (setup.moves.get(log.size()) == true){
 							//add the ticket and the destination to the log
@@ -328,6 +344,7 @@ public final class MyGameStateFactory implements Factory<GameState> {
 						}
 					}
 					else if (move.commencedBy().isDetective()) {
+						ArrayList<Player> newDetectives = new ArrayList<>();
 						for (Player i : detectives) {
 							if (i.piece() == move.commencedBy()){
 								Player newDetective = i.use(move.ticket).at(move.destination);
@@ -342,11 +359,12 @@ public final class MyGameStateFactory implements Factory<GameState> {
 						if (remainingSet.isEmpty()) {
 							remainingSet.add(mrX.piece());
 						}
+						return new MyGameState(setup, ImmutableSet.copyOf(remainingSet), ImmutableList.copyOf(newLog), newMrX, ImmutableList.copyOf(newDetectives));
 					}
 					//for detectives: use the immutable pieces set remaining.
 					//when detectives makes a move, don't put in new set of remaining. look at what tucket was used and give to mr x
 					//if it's a double move, it will be mr x
-					return new MyGameState(setup, ImmutableSet.copyOf(remainingSet), ImmutableList.copyOf(newLog), newMrX, ImmutableList.copyOf(newDetectives));
+					return new MyGameState(setup, ImmutableSet.copyOf(remainingSet), ImmutableList.copyOf(newLog), newMrX, detectives);
 				}
 
 				@Override
