@@ -168,33 +168,36 @@ public final class MyGameStateFactory implements Factory<GameState> {
 				}
 			}
 
-			//check whether mrX is trapped
+			//check whether mrX is cornered (surrounding nodes are taken by detectives)
+			boolean mrXIsCornered = !remaining.isEmpty() && this.moves.isEmpty();
+
+			//checks whether mrX is trapped
 			boolean mrXIsTrapped = remaining.contains(mrX.piece()) && this.moves.isEmpty();
 
 			//check whether mrX survived till the end (log is full, and it is his turn again)
 			//if mrX's log is equal to the total number of rounds in the game, the log is full
 			//must also check that the remaining set contains mrX. if mrX fills the log on his turn, the detectives still get 1 final round
 			//if the remaining set contains mrX, it means the turn successfully passed back to him after that round, meaning he survived
-			boolean logFull = (this.log.size() == setup.moves.size() && remaining.contains(mrX.piece()));
+			boolean logFull = (log.size() == setup.moves.size() && remaining.contains(mrX.piece()));
 
-			//use singleMoves method to ask if the detective are stuck
+			//use singleMoves method to ask if detectives have run out of tickets
 			boolean detectivesStuck = true;
 			for (Player i : detectives) {
-				if (!makeSingleMoves(setup, detectives, i, i.location()).isEmpty()) {
+				if (!makeSingleMoves(setup, detectives, i, i.location()).isEmpty() && !i.tickets().isEmpty()) {
 					detectivesStuck = false;
 					break;
 				}
 			}
 
 			//detectives win if they catch him or trap him
-			if (mrXWasCaught || mrXIsTrapped){
+			if (mrXWasCaught || mrXIsTrapped || mrXIsCornered) {
 				for (Player j : detectives){
 					winnerSet.add(j.piece());
 				}
 			}
 
 			//mrX wins if he survives to the end OR detectives are stuck
-			else if (logFull || detectivesStuck){
+			else if (logFull || (detectivesStuck)){
 				winnerSet.add(mrX.piece());
 			}
 
