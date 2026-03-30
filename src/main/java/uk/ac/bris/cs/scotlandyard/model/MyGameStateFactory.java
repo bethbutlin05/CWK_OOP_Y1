@@ -169,10 +169,7 @@ public final class MyGameStateFactory implements Factory<GameState> {
 			}
 
 			//check whether mrX is cornered (surrounding nodes are taken by detectives)
-			boolean mrXIsCornered = !remaining.isEmpty() && this.moves.isEmpty();
-
-			//checks whether mrX is trapped
-			boolean mrXIsTrapped = remaining.contains(mrX.piece()) && this.moves.isEmpty();
+			boolean mrXIsCornered = remaining.contains(mrX.piece()) && this.moves.isEmpty();
 
 			//check whether mrX survived till the end (log is full, and it is his turn again)
 			//if mrX's log is equal to the total number of rounds in the game, the log is full
@@ -190,7 +187,7 @@ public final class MyGameStateFactory implements Factory<GameState> {
 			}
 
 			//detectives win if they catch him or trap him
-			if (mrXWasCaught || mrXIsTrapped || mrXIsCornered) {
+			if (mrXWasCaught || mrXIsCornered) {
 				for (Player j : detectives){
 					winnerSet.add(j.piece());
 				}
@@ -343,7 +340,12 @@ public final class MyGameStateFactory implements Factory<GameState> {
 						//player.use(Ticket).at(location) creates a new version of the player who has one less ticket and is now standing at a new location
 						newMrX = mrX.use(move.ticket).at(move.destination);
 						for (Player i : detectives){
-							remainingSet.add(i.piece());
+							if (!makeSingleMoves(setup, detectives, i, i.location()).isEmpty()) {
+								remainingSet.add(i.piece());
+							}
+						}
+						if (remainingSet.isEmpty()) {
+							remainingSet.add(mrX.piece());
 						}
 					}
 					else if (move.commencedBy().isDetective()) {
@@ -362,6 +364,21 @@ public final class MyGameStateFactory implements Factory<GameState> {
 						if (remainingSet.isEmpty()) {
 							remainingSet.add(mrX.piece());
 						}
+
+						//remove the detective who just moved
+						remainingSet.remove(move.commencedBy());
+
+						//did this move block any detectives waiting for their go?
+						HashSet<Piece> trappedDetectives = new HashSet<>();
+						for (Piece p : remainingSet) {
+							for (Player d : newDetectives) { // MUST use newDetectives here!
+								if (d.piece() == p && makeSingleMoves(setup, newDetectives, d, d.location()).isEmpty()) {
+									trappedDetectives.add(p);
+								}
+							}
+						}
+						// kick them out of line
+						remainingSet.removeAll(trappedDetectives);
 						return new MyGameState(setup, ImmutableSet.copyOf(remainingSet), ImmutableList.copyOf(newLog), newMrX, ImmutableList.copyOf(newDetectives));
 					}
 					//for detectives: use the immutable pieces set remaining.
@@ -393,7 +410,12 @@ public final class MyGameStateFactory implements Factory<GameState> {
 					}
 					Player newMrX = mrX.use(ScotlandYard.Ticket.DOUBLE).use(move.ticket1).use(move.ticket2).at(move.destination2);
 					for (Player i : detectives){
-						remainingSet.add(i.piece());
+						if (!makeSingleMoves(setup, detectives, i, i.location()).isEmpty()) {
+							remainingSet.add(i.piece());
+						}
+					}
+					if (remainingSet.isEmpty()) {
+						remainingSet.add(mrX.piece());
 					}
 					return new MyGameState(setup, ImmutableSet.copyOf(remainingSet), ImmutableList.copyOf(newLog), newMrX, detectives);
 				}
