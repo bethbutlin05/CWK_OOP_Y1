@@ -139,12 +139,12 @@ public final class MyGameStateFactory implements Factory<GameState> {
 
 		@Override
 		public ImmutableSet<Piece> getWinner() {
-			return this.winner;
+			return winner;
 		}
 
 		@Override
 		public ImmutableSet<Move> getAvailableMoves() {
-			return this.moves;
+			return moves;
 		}
 
 		private ImmutableSet<Piece> calculateAllPlayers() {
@@ -354,8 +354,8 @@ public final class MyGameStateFactory implements Factory<GameState> {
 								//give mrX the exact ticket the detective just spent, his location stays the same
 								newMrX = mrX.give(move.ticket);
 								newDetectives.add(newDetective);
-							}
-							newDetectives.add(i);
+							} else {
+							newDetectives.add(i); }
 							//remainingSet.add(i.piece());
 						}
 						remainingSet.remove(move.commencedBy());
