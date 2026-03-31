@@ -57,12 +57,18 @@ public final class MyModelFactory implements Factory<Model> {
 		}
 
 		@Override
-		public void registerObserver(@NonNull Model.Observer observer) {
-
+		public void registerObserver(@NonNull Observer observer) {
+			if (observer == null) {
+				throw new NullPointerException("Empty observer!");
+			}
+			for (Observer i : observers){
+				if (i == observer) throw new IllegalArgumentException("Duplicate observer!");
+			}
+			observers.add(observer);
 		}
 
 		@Override
-		public void unregisterObserver(@NonNull Model.Observer observer) {
+		public void unregisterObserver(@NonNull Observer observer) {
 
 		}
 
