@@ -9,10 +9,7 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 import uk.ac.bris.cs.scotlandyard.model.Board.GameState;
 import uk.ac.bris.cs.scotlandyard.model.ScotlandYard.Factory;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 /**
  * cw-model
@@ -36,7 +33,7 @@ public final class MyModelFactory implements Factory<Model> {
 	public class MyModel implements Model {
 
 		//making the observer list a private attribute of MyModel will make it persist for the whole game
-		private List<Model.Observer> observers;
+		private Set<Model.Observer> observers;
 		private GameState gameState;
 
 		//constructor
@@ -46,7 +43,7 @@ public final class MyModelFactory implements Factory<Model> {
 			// game state is immutable (can't be changed), model allows for people to open the game, close the game, open multiple windows etc.
 			// model therefore needs a mutable Observer list to keep track of everyone currently "observing" the game updates
 			// when model is first created, the list starts empty:
-			this.observers = new ArrayList<>();
+			this.observers = new HashSet<>();
 			this.gameState = initialState;
 		}
 
@@ -58,9 +55,11 @@ public final class MyModelFactory implements Factory<Model> {
 
 		@Override
 		public void registerObserver(@NonNull Observer observer) {
+			// null observer should throw
 			if (observer == null) {
 				throw new NullPointerException("Empty observer!");
 			}
+			//same observer twice should throw
 			for (Observer i : observers){
 				if (i == observer) throw new IllegalArgumentException("Duplicate observer!");
 			}
@@ -69,12 +68,21 @@ public final class MyModelFactory implements Factory<Model> {
 
 		@Override
 		public void unregisterObserver(@NonNull Observer observer) {
-
+			// null observer should throw
+			if (observer == null) {
+				throw new NullPointerException("Empty observer!");
+			}
+			// can't unregister a spectator that has never been registered before
+			boolean isRegistered = false;
+			for (Observer i : observers){
+				if (i == observer) isRegistered = true;
+			}
+			if (!isRegistered) throw new IllegalArgumentException("Can't unregister if not registered");
 		}
 
 		@Override
 		public @NonNull ImmutableSet<Observer> getObservers() {
-			return null;
+			return ImmutableSet.copyOf(observers);
 		}
 
 		@Override
