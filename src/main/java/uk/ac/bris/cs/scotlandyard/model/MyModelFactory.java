@@ -69,15 +69,15 @@ public final class MyModelFactory implements Factory<Model> {
 		@Override
 		public void unregisterObserver(@NonNull Observer observer) {
 			// null observer should throw
-			if (observer == null) {
-				throw new NullPointerException("Empty observer!");
-			}
+			if (observer == null) throw new NullPointerException("Empty observer!");
+
 			// can't unregister a spectator that has never been registered before
 			boolean isRegistered = false;
 			for (Observer i : observers){
 				if (i == observer) isRegistered = true;
 			}
 			if (!isRegistered) throw new IllegalArgumentException("Can't unregister if not registered");
+			observers.remove(observer);
 		}
 
 		@Override
