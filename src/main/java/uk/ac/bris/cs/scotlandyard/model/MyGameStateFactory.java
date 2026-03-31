@@ -371,7 +371,7 @@ public final class MyGameStateFactory implements Factory<GameState> {
 						//did this move block any detectives waiting for their go?
 						HashSet<Piece> trappedDetectives = new HashSet<>();
 						for (Piece p : remainingSet) {
-							for (Player d : newDetectives) { // MUST use newDetectives here!
+							for (Player d : newDetectives) {
 								if (d.piece() == p && makeSingleMoves(setup, newDetectives, d, d.location()).isEmpty()) {
 									trappedDetectives.add(p);
 								}
