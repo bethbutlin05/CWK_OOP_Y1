@@ -41,7 +41,7 @@ public final class MyGameStateFactory implements Factory<GameState> {
 		private final Player mrX;
 		private final List<Player> detectives;
 		private ImmutableSet<Move> moves;
-		private ImmutableSet<Piece> winner;
+		private final ImmutableSet<Piece> winner;
 		private final ImmutableSet<Piece> allPlayers;
 
 		//constructor
@@ -89,6 +89,7 @@ public final class MyGameStateFactory implements Factory<GameState> {
 
 			this.winner = calculateWinner();
 
+			//if the winner set is empty, no moves left
 			if (!this.winner.isEmpty()) {
 				this.moves = ImmutableSet.of();
 			}
