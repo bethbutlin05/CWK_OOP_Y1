@@ -39,7 +39,7 @@ public final class MyModelFactory implements Factory<Model> {
 		//constructor
 		public MyModel(GameState initialState){
 			// observer pattern meaning:
-			// MyModel (the game) is the subject, the GUI is the observer
+			// MyModel (the game) is the subject, the GUI (the game window) is the observer
 			// game state is immutable (can't be changed), model allows for people to open the game, close the game, open multiple windows etc.
 			// model therefore needs a mutable Observer list to keep track of everyone currently "observing" the game updates
 			// when model is first created, the list starts empty:
@@ -55,6 +55,8 @@ public final class MyModelFactory implements Factory<Model> {
 
 		@Override
 		public void registerObserver(@NonNull Observer observer) {
+			//adding a new observer to the list
+
 			// null observer should throw
 			if (observer == null) {
 				throw new NullPointerException("Empty observer!");
@@ -68,6 +70,8 @@ public final class MyModelFactory implements Factory<Model> {
 
 		@Override
 		public void unregisterObserver(@NonNull Observer observer) {
+			//removing an observer from the list
+
 			// null observer should throw
 			if (observer == null) throw new NullPointerException("Empty observer!");
 
@@ -87,7 +91,21 @@ public final class MyModelFactory implements Factory<Model> {
 
 		@Override
 		public void chooseMove(@NonNull Move move) {
+			// TODO Advance the model with move, then notify all observers of what just happened.
+			//  you may want to use getWinner() to determine whether to send out Event.MOVE_MADE or Event.GAME_OVER
 
+			//Must save result of calling advance to a variable, as GameState is immutable
+			this.gameState = this.gameState.advance(move);
+			Observer.Event event = null;
+			if (gameState.getWinner().isEmpty()){
+				event = Observer.Event.MOVE_MADE;
+			}
+			else {
+				event = Observer.Event.GAME_OVER;
+			}
+			for (Observer observer : observers){
+				observer.onModelChanged(this.gameState, event);
+			}
 		}
 	}
 }
