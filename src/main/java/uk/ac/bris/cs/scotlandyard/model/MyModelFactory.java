@@ -18,7 +18,6 @@ import java.util.*;
 public final class MyModelFactory implements Factory<Model> {
 
 	@Nonnull
-	@Override
 	public Model build(GameSetup setup,
 					   Player mrX,
 					   ImmutableList<Player> detectives) {
