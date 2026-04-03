@@ -1,41 +1,111 @@
 package uk.ac.bris.cs.scotlandyard.model;
+
 import com.google.common.collect.ImmutableList;
+
 import com.google.common.collect.ImmutableSet;
-import java.util.HashSet; import java.util.Set;
-import javax.annotation.Nonnull;
+import jakarta.annotation.Nonnull;
+
+import org.checkerframework.checker.nullness.qual.NonNull;
+import uk.ac.bris.cs.scotlandyard.model.Board.GameState;
 import uk.ac.bris.cs.scotlandyard.model.ScotlandYard.Factory;
+
+import java.util.*;
+
+/**
+ * cw-model
+ * Stage 2: Complete this class
+ */
 public final class MyModelFactory implements Factory<Model> {
-    @Nonnull
-    @Override
-    public Model build(GameSetup setup, Player mrX, ImmutableList<Player> detectives) { Factory<Board.GameState> stateFactory = new MyGameStateFactory();
-        Board.GameState initialState = stateFactory.build(setup, mrX, detectives); return new MyModel(initialState);
+
+	@Nonnull
+	@Override
+	public Model build(GameSetup setup,
+					   Player mrX,
+					   ImmutableList<Player> detectives) {
+		// TODO
+		//throw new RuntimeException("Implement me!");
+		MyGameStateFactory stateFactory = new MyGameStateFactory();
+        GameState initialState = stateFactory.build(setup, mrX, detectives);
+		MyModel model = new MyModel(initialState);
+		return model;
     }
 
-    // --- YOUR CUSTOM ANNOUNCER CLASS ---
-    private final class MyModel implements Model { private Board.GameState state; private final Set<Model.Observer> observers;
-        private MyModel(Board.GameState initialState) { this.state = initialState;
-            this.observers = new HashSet<>();
-        }
-        @Nonnull
-        @Override
-        public Board getCurrentBoard() {
-            return state;
-        }
-        @Override
-        public void registerObserver(@Nonnull Model.Observer observer) {
-            if (observer == null) throw new NullPointerException("Observer cannot be null");
-            if (observers.contains(observer)) throw new IllegalArgumentException("Observer is already registered!"); observers.add(observer);
-        }
-        @Override public void unregisterObserver(@Nonnull Model.Observer observer) {
-            if (observer == null) throw new NullPointerException("Observer cannot be null");
-            if (!observers.contains(observer)) throw new IllegalArgumentException("Observer is not registered!"); observers.remove(observer);
-        }
-        @Nonnull
-        @Override public ImmutableSet<Model.Observer> getObservers() {
-            return ImmutableSet.copyOf(observers);
-        }
-        @Override
-        public void chooseMove(@Nonnull Move move) {
-        }
-    }
+	public class MyModel implements Model {
+
+		//making the observer list a private attribute of MyModel will make it persist for the whole game
+		private Set<Model.Observer> observers;
+		private GameState gameState;
+
+		//constructor
+		public MyModel(GameState initialState){
+			// observer pattern meaning:
+			// MyModel (the game) is the subject, the GUI (the game window) is the observer
+			// game state is immutable (can't be changed), model allows for people to open the game, close the game, open multiple windows etc.
+			// model therefore needs a mutable Observer list to keep track of everyone currently "observing" the game updates
+			// when model is first created, the list starts empty:
+			this.observers = new HashSet<>();
+			this.gameState = initialState;
+		}
+
+		@Nonnull
+		@Override
+		public Board getCurrentBoard() {
+			return gameState;
+		}
+
+		@Override
+		public void registerObserver(@NonNull Observer observer) {
+			//adding a new observer to the list
+
+			// null observer should throw
+			if (observer == null) {
+				throw new NullPointerException("Empty observer!");
+			}
+			//same observer twice should throw
+			for (Observer i : observers){
+				if (i == observer) throw new IllegalArgumentException("Duplicate observer!");
+			}
+			observers.add(observer);
+		}
+
+		@Override
+		public void unregisterObserver(@NonNull Observer observer) {
+			//removing an observer from the list
+
+			// null observer should throw
+			if (observer == null) throw new NullPointerException("Empty observer!");
+
+			// can't unregister a spectator that has never been registered before
+			boolean isRegistered = false;
+			for (Observer i : observers){
+				if (i == observer) isRegistered = true;
+			}
+			if (!isRegistered) throw new IllegalArgumentException("Can't unregister if not registered");
+			observers.remove(observer);
+		}
+
+		@Override
+		public @NonNull ImmutableSet<Observer> getObservers() {
+			return ImmutableSet.copyOf(observers);
+		}
+
+		@Override
+		public void chooseMove(@NonNull Move move) {
+			// TODO Advance the model with move, then notify all observers of what just happened.
+			//  you may want to use getWinner() to determine whether to send out Event.MOVE_MADE or Event.GAME_OVER
+
+			//Must save result of calling advance to a variable, as GameState is immutable
+			this.gameState = this.gameState.advance(move);
+			Observer.Event event = null;
+			if (gameState.getWinner().isEmpty()){
+				event = Observer.Event.MOVE_MADE;
+			}
+			else {
+				event = Observer.Event.GAME_OVER;
+			}
+			for (Observer observer : observers){
+				observer.onModelChanged(this.gameState, event);
+			}
+		}
+	}
 }

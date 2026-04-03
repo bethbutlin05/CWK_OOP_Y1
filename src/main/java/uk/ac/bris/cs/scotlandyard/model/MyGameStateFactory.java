@@ -41,7 +41,7 @@ public final class MyGameStateFactory implements Factory<GameState> {
 		private final Player mrX;
 		private final List<Player> detectives;
 		private ImmutableSet<Move> moves;
-		private ImmutableSet<Piece> winner;
+		private final ImmutableSet<Piece> winner;
 		private final ImmutableSet<Piece> allPlayers;
 
 		//constructor
@@ -89,6 +89,7 @@ public final class MyGameStateFactory implements Factory<GameState> {
 
 			this.winner = calculateWinner();
 
+			//if the winner set is empty, no moves left
 			if (!this.winner.isEmpty()) {
 				this.moves = ImmutableSet.of();
 			}
@@ -371,7 +372,7 @@ public final class MyGameStateFactory implements Factory<GameState> {
 						//did this move block any detectives waiting for their go?
 						HashSet<Piece> trappedDetectives = new HashSet<>();
 						for (Piece p : remainingSet) {
-							for (Player d : newDetectives) { // MUST use newDetectives here!
+							for (Player d : newDetectives) {
 								if (d.piece() == p && makeSingleMoves(setup, newDetectives, d, d.location()).isEmpty()) {
 									trappedDetectives.add(p);
 								}
