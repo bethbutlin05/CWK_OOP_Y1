@@ -18,11 +18,9 @@ import java.util.*;
 public final class MyModelFactory implements Factory<Model> {
 
 	@Nonnull
-	@Override
 	public Model build(GameSetup setup,
 					   Player mrX,
 					   ImmutableList<Player> detectives) {
-		// TODO
 		//throw new RuntimeException("Implement me!");
 		MyGameStateFactory stateFactory = new MyGameStateFactory();
         GameState initialState = stateFactory.build(setup, mrX, detectives);
