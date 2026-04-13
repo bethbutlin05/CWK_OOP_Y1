@@ -53,12 +53,6 @@ public final class MyGameStateFactory implements Factory<GameState> {
 				final List<Player> detectives) {
 
 			//constructor builds immutable game snapshot (computes moves and winner)
-			//generate initial moves
-			//moves = getAvailableMoves();
-			//if mrx has no legal move at the beginning, he immediately loses
-			//if (moves.isEmpty() && remaining.contains(mrX)) {
-			//	winner.equals(detectives);
-			//} else {winner.equals(null);};
 
 			this.setup = setup;
 			this.remaining = remaining;
@@ -115,17 +109,9 @@ public final class MyGameStateFactory implements Factory<GameState> {
 
 		@Override
 		public Optional<TicketBoard> getPlayerTickets(Piece piece) {
-
-			//using lambdas!! woop woop. but we need to be able to explain how it works SO
-			//lambdas = shortcuts. If an interface has exactly ONE method, you don't need to write out
-			//a whole new class to implement it, just use arrow notation ->
-			//requestedTicket is the parameter, Java knows it's a ticket because the TicketBoard interface (in board)
-			//says so.
-			// -> can be read as "executes"
-			//mrX.tickets().getOrDefault(requestedTicket, 0) is the logic, it looks in the map
-			//for the requested ticket, finds it, returns it.
-			//if it doesn't find it, return 0 (getOrDefault bit)
-
+			//requestedTicket is the parameter, Java knows it's a ticket because of the TicketBoard interface (in board)
+			//mrX.tickets().getOrDefault(requestedTicket, 0) is the logic, it looks in the map for the requested ticket, finds it, returns it.
+			//if it doesn't find it, return 0 (getOrDefault)
 			if (piece.isMrX()) return Optional.of(requestedTicket -> mrX.tickets().getOrDefault(requestedTicket, 0));
 			for (Player i : detectives) {
 				if (i.piece() == piece) return Optional.of(requestedTicket -> i.tickets().getOrDefault(requestedTicket, 0));
@@ -149,12 +135,12 @@ public final class MyGameStateFactory implements Factory<GameState> {
 		}
 
 		private ImmutableSet<Piece> calculateAllPlayers() {
-			var builder = ImmutableSet.<Piece>builder();
-			builder.add(mrX.piece());
+			HashSet<Piece> players = new HashSet<>();
+			players.add(mrX.piece());
 			for (Player i : detectives) {
-				builder.add(i.piece());
+				players.add(i.piece());
 			}
-			return builder.build();
+			return ImmutableSet.copyOf(players);
 		}
 
 		private ImmutableSet<Piece> calculateWinner(){
@@ -174,8 +160,8 @@ public final class MyGameStateFactory implements Factory<GameState> {
 
 			//check whether mrX survived till the end (log is full, and it is his turn again)
 			//if mrX's log is equal to the total number of rounds in the game, the log is full
-			//must also check that the remaining set contains mrX. if mrX fills the log on his turn, the detectives still get 1 final round
 			//if the remaining set contains mrX, it means the turn successfully passed back to him after that round, meaning he survived
+			//if mrX fills the log on his turn, the detectives still get 1 final round
 			boolean logFull = (log.size() == setup.moves.size() && remaining.contains(mrX.piece()));
 
 			//use singleMoves method to ask if detectives have run out of tickets
@@ -296,38 +282,27 @@ public final class MyGameStateFactory implements Factory<GameState> {
 
 		@Override
 		public GameState advance(Move move) {
-			//EXPLANATION OF THE VISITOR PATTERN
-			//In java, if you have a Move object, the compiler doesn't know whether it is a SingleMove or DoubleMove object
-			//the visitor pattern allows the object to tell you what it is
-			//we pass into move.accept(...) an anonymous inner class that implements the Move.Visitor interface.
-			//the game state tracks whose turn it is using the 'remaining' attribute
-			//advance()'s job if to determine what this set should look like for the next turn
+			//advance returns the gamestate for the next turn
 
 			if(!moves.contains(move)) throw new IllegalArgumentException("Illegal move: "+move);
-			//takes in a move and returns a new game state. a move comes in, giving the new position. need to return new game state
-			//with player at that new position.
-			//when mrx: is it a reveal round?
-			//when detectives moves:
-			//use visitor pattern
 
+			//pass an anonymous inner class to move.accept(...) to implement Move.Visitor interface
 			GameState nextState = move.accept(new Move.Visitor<GameState>() {
+
+				//visitor pattern allows the object to tell you what it is - the move will use dynamic dispatch to route itself to the correct visit method
 				@Override
 				public GameState visit(Move.SingleMove move) {
+					//set up temporary mutable copies of the state to build data for next turn
 					List<LogEntry> newLog = new ArrayList<>(log);
 					Player newMrX = null;
 					HashSet<Piece> remainingSet = new HashSet<>(remaining);
-					//singlemove uses dynamic dispatch and visitor pattern NEED TO KNOW THIS WELL
-					//logic to deal with two cases of single move (mrx or detectives).
-					//you can find out if mrx or detectives as there is stuff in the move. e.g. move.commencedBy().isMr()
-					//find out if it is a reveal round or not
-					//if you loop through (setup.moves == true) it is a reveal round
-					//loop through the log immutable list for this
 
 					if (move.commencedBy().isMrX()) {
+						//if mrX has moved, his turn is over so we clear the remaining set
 						remainingSet.clear();
-						//in the setup attribute, if
+						//determine whether it is a reveal round or not
 						if (setup.moves.get(log.size()) == true){
-							//add the ticket and the destination to the log
+							//if it's a reveal round, add the ticket and the destination to the log
 							LogEntry newEntry = LogEntry.reveal(move.ticket, move.destination);
 							newLog.add(newEntry);
 						}
@@ -335,41 +310,42 @@ public final class MyGameStateFactory implements Factory<GameState> {
 							//add hidden move to the log
 							newLog.add(LogEntry.hidden(move.ticket));
 						}
-						//.use(Ticket) returns a new player with that specific ticket deducted
-						//.give(Ticket) returns a new play with that specific ticket added
-						//.at(int location) returns a new player sitting at the new destination
-						//player.use(Ticket).at(location) creates a new version of the player who has one less ticket and is now standing at a new location
+						//create new version of player who has one less ticket (.use(ticket)) and is now standing at new location (.at location)
 						newMrX = mrX.use(move.ticket).at(move.destination);
 						for (Player i : detectives){
+							//for each detective, if it has available moves to make (the singleMoves list isn't empty), add its piece to the remainingSet
 							if (!makeSingleMoves(setup, detectives, i, i.location()).isEmpty()) {
 								remainingSet.add(i.piece());
 							}
 						}
+						//if no detectives have any moves (they are all stuck as no detectives were added to the remaining set in the above loop), add mrX's piece to it (it is now his go)
 						if (remainingSet.isEmpty()) {
 							remainingSet.add(mrX.piece());
 						}
 					}
 					else if (move.commencedBy().isDetective()) {
+						//list of new detectives for next round
 						ArrayList<Player> newDetectives = new ArrayList<>();
 						for (Player i : detectives) {
 							if (i.piece() == move.commencedBy()){
+								//for the specific detective that moved, create a new version of the player with one less ticket standing at new location
 								Player newDetective = i.use(move.ticket).at(move.destination);
 								//give mrX the exact ticket the detective just spent, his location stays the same
 								newMrX = mrX.give(move.ticket);
+								//add the detective with new location and ticket list to list
 								newDetectives.add(newDetective);
 							} else {
+							//for all other detectives, just add them to the list as they are
 							newDetectives.add(i); }
-							//remainingSet.add(i.piece());
 						}
+						//remove detective that just played from the 'waiting list'
 						remainingSet.remove(move.commencedBy());
+						//if they were the last detective to move, the round is over and it's mrX's turn
 						if (remainingSet.isEmpty()) {
 							remainingSet.add(mrX.piece());
 						}
 
-						//remove the detective who just moved
-						remainingSet.remove(move.commencedBy());
-
-						//did this move block any detectives waiting for their go?
+						//determine whether this move blocked any detectives waiting for their go
 						HashSet<Piece> trappedDetectives = new HashSet<>();
 						for (Piece p : remainingSet) {
 							for (Player d : newDetectives) {
@@ -378,18 +354,17 @@ public final class MyGameStateFactory implements Factory<GameState> {
 								}
 							}
 						}
-						// kick them out of line
+						//remove trapped detectives from remaining set
 						remainingSet.removeAll(trappedDetectives);
+						//return new instantiated MyGameState
 						return new MyGameState(setup, ImmutableSet.copyOf(remainingSet), ImmutableList.copyOf(newLog), newMrX, ImmutableList.copyOf(newDetectives));
 					}
-					//for detectives: use the immutable pieces set remaining.
-					//when detectives makes a move, don't put in new set of remaining. look at what tucket was used and give to mr x
-					//if it's a double move, it will be mr x
 					return new MyGameState(setup, ImmutableSet.copyOf(remainingSet), ImmutableList.copyOf(newLog), newMrX, detectives);
 				}
 
 				@Override
 				public GameState visit(Move.DoubleMove move) {
+					//if it's a double move, we know it will be mrX
 					List<LogEntry> newLog = new ArrayList<>(log);
 					HashSet<Piece> remainingSet = new HashSet<>(remaining);
 					remainingSet.clear();
@@ -409,7 +384,10 @@ public final class MyGameStateFactory implements Factory<GameState> {
 					else {
 						newLog.add(LogEntry.hidden(move.ticket2));
 					}
+
+					//deduct tickets from old mrX and update his location
 					Player newMrX = mrX.use(ScotlandYard.Ticket.DOUBLE).use(move.ticket1).use(move.ticket2).at(move.destination2);
+
 					for (Player i : detectives){
 						if (!makeSingleMoves(setup, detectives, i, i.location()).isEmpty()) {
 							remainingSet.add(i.piece());
