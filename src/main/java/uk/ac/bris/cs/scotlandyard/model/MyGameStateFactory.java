@@ -109,9 +109,7 @@ public final class MyGameStateFactory implements Factory<GameState> {
 
 		@Override
 		public Optional<TicketBoard> getPlayerTickets(Piece piece) {
-			//requestedTicket is the parameter, Java knows it's a ticket because of the TicketBoard interface (in board)
-			//mrX.tickets().getOrDefault(requestedTicket, 0) is the logic, it looks in the map for the requested ticket, finds it, returns it.
-			//if it doesn't find it, return 0 (getOrDefault)
+			//looks in the map for the requested ticket, finds it, returns it.
 			if (piece.isMrX()) return Optional.of(requestedTicket -> mrX.tickets().getOrDefault(requestedTicket, 0));
 			for (Player i : detectives) {
 				if (i.piece() == piece) return Optional.of(requestedTicket -> i.tickets().getOrDefault(requestedTicket, 0));
@@ -159,9 +157,6 @@ public final class MyGameStateFactory implements Factory<GameState> {
 			boolean mrXIsCornered = remaining.contains(mrX.piece()) && this.moves.isEmpty();
 
 			//check whether mrX survived till the end (log is full, and it is his turn again)
-			//if mrX's log is equal to the total number of rounds in the game, the log is full
-			//if the remaining set contains mrX, it means the turn successfully passed back to him after that round, meaning he survived
-			//if mrX fills the log on his turn, the detectives still get 1 final round
 			boolean logFull = (log.size() == setup.moves.size() && remaining.contains(mrX.piece()));
 
 			//use singleMoves method to ask if detectives have run out of tickets
